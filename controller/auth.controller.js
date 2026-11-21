@@ -3,18 +3,20 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const blacklistModel = require('../models/blacklist.model');
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const authCookieOptions = {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction,
     maxAge: 24 * 60 * 60 * 1000,
     path: '/'
 };
 
 const clearAuthCookieOptions = {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction,
     path: '/'
 };
 
