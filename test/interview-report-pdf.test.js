@@ -1,6 +1,5 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const { PDFParse } = require("pdf-parse");
 const { generateInterviewReportPdf } = require("../services/interview-report-pdf.service");
 
 test("generates a readable interview report PDF", async () => {
@@ -23,14 +22,22 @@ test("generates a readable interview report PDF", async () => {
 
   assert.equal(pdf.subarray(0, 5).toString(), "%PDF-");
 
-  const parser = new PDFParse({ data: pdf });
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const document = await pdfjs.getDocument({ data: new Uint8Array(pdf) }).promise;
   try {
-    const result = await parser.getText();
-    assert.match(result.text, /Software Engineer/);
-    assert.match(result.text, /Technical Questions/);
-    assert.match(result.text, /Cloud MLOps/);
-    assert.match(result.text, /Project review/);
+    const pageTexts = [];
+    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+      const page = await document.getPage(pageNumber);
+      const content = await page.getTextContent();
+      pageTexts.push(content.items.map((item) => "str" in item ? item.str : "").join(" "));
+    }
+
+    const text = pageTexts.join("\n");
+    assert.match(text, /Software Engineer/);
+    assert.match(text, /Technical Questions/);
+    assert.match(text, /Cloud MLOps/);
+    assert.match(text, /Project review/);
   } finally {
-    await parser.destroy();
+    await document.destroy();
   }
 });

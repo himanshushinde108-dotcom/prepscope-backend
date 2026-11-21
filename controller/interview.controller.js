@@ -1,10 +1,26 @@
 const mongoose = require("mongoose");
-const { PDFParse } = require("pdf-parse");
 const { InterviewAnalysis } = require("../models/interviewreport.model");
 const { generateInterviewReport } = require("../services/ai.service");
 const { generateInterviewReportPdf } = require("../services/interview-report-pdf.service");
 
 const reportFields = "-resume -jobdescription -selfdescription -user -__v";
+
+async function extractResumeText(buffer) {
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const document = await pdfjs.getDocument({ data: new Uint8Array(buffer) }).promise;
+
+  try {
+    const pageTexts = [];
+    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+      const page = await document.getPage(pageNumber);
+      const content = await page.getTextContent();
+      pageTexts.push(content.items.map((item) => "str" in item ? item.str : "").join(" "));
+    }
+    return pageTexts.join("\n").trim();
+  } finally {
+    await document.destroy();
+  }
+}
 
 async function generateInterviewReportController(req, res) {
   if (!req.file) {
@@ -17,18 +33,14 @@ async function generateInterviewReportController(req, res) {
     return res.status(400).json({ message: "Job description and self description are required." });
   }
 
-  const parser = new PDFParse({ data: req.file.buffer });
   let resumetext;
   try {
-    const parsedPdf = await parser.getText();
-    resumetext = parsedPdf.text.trim();
+    resumetext = await extractResumeText(req.file.buffer);
   } catch (error) {
     throw Object.assign(new Error("The uploaded PDF could not be read. Please upload a valid PDF resume."), {
       statusCode: 422,
       cause: error
     });
-  } finally {
-    await parser.destroy();
   }
 
   if (!resumetext) {
