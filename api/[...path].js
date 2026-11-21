@@ -1,3 +1,5 @@
+require("@napi-rs/canvas");
+
 const app = require("../src/app");
 const connectDB = require("../config/database");
 
