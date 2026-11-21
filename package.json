@@ -12,6 +12,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": "22.x"
+  },
   "dependencies": {
     "@google/genai": "^3.6.0",
     "bcryptjs": "^3.0.3",
@@ -23,7 +26,7 @@
     "mongoose": "^9.12.1",
     "multer": "^2.5.0",
     "pdfjs-dist": "4.10.38",
-    "pdfkit": "^0.21.0",
+    "pdfkit": "0.17.2",
     "zod": "^4.6.7"
   }
 }
