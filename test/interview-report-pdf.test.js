@@ -1,4 +1,5 @@
 const assert = require("node:assert/strict");
+const path = require("node:path");
 const { test } = require("node:test");
 const { generateInterviewReportPdf } = require("../services/interview-report-pdf.service");
 
@@ -23,7 +24,13 @@ test("generates a readable interview report PDF", async () => {
   assert.equal(pdf.subarray(0, 5).toString(), "%PDF-");
 
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const document = await pdfjs.getDocument({ data: new Uint8Array(pdf) }).promise;
+  const pdfjsRoot = path.resolve(path.dirname(require.resolve("pdfjs-dist/legacy/build/pdf.mjs")), "../..");
+  const document = await pdfjs.getDocument({
+    data: new Uint8Array(pdf),
+    standardFontDataUrl: path.join(pdfjsRoot, "standard_fonts", path.sep),
+    cMapUrl: path.join(pdfjsRoot, "cmaps", path.sep),
+    cMapPacked: true
+  }).promise;
   try {
     const pageTexts = [];
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {

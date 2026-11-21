@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const path = require("node:path");
 const { InterviewAnalysis } = require("../models/interviewreport.model");
 const { generateInterviewReport } = require("../services/ai.service");
 const { generateInterviewReportPdf } = require("../services/interview-report-pdf.service");
@@ -7,7 +8,13 @@ const reportFields = "-resume -jobdescription -selfdescription -user -__v";
 
 async function extractResumeText(buffer) {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const document = await pdfjs.getDocument({ data: new Uint8Array(buffer) }).promise;
+  const pdfjsRoot = path.resolve(path.dirname(require.resolve("pdfjs-dist/legacy/build/pdf.mjs")), "../..");
+  const document = await pdfjs.getDocument({
+    data: new Uint8Array(buffer),
+    standardFontDataUrl: path.join(pdfjsRoot, "standard_fonts", path.sep),
+    cMapUrl: path.join(pdfjsRoot, "cmaps", path.sep),
+    cMapPacked: true
+  }).promise;
 
   try {
     const pageTexts = [];
@@ -37,6 +44,7 @@ async function generateInterviewReportController(req, res) {
   try {
     resumetext = await extractResumeText(req.file.buffer);
   } catch (error) {
+    console.error("Resume PDF parsing failed:", error.message);
     throw Object.assign(new Error("The uploaded PDF could not be read. Please upload a valid PDF resume."), {
       statusCode: 422,
       cause: error
